@@ -6,6 +6,7 @@ const db = require('./db');
 const authRoutes = require('./auth');
 const dashboardRoutes = require('./dashboard');
 const authMiddleware = require('./authMiddleware');
+const salesRoutes = require('./sales');
 
 const app = express();
 const PORT = 5000;
@@ -99,42 +100,7 @@ app.delete('/api/products/:id', authMiddleware, async (req, res) => {
 });
 
 // Registrar una nueva venta
-app.post('/api/sales', authMiddleware, async (req, res) => {
-    const { cart, total } = req.body;
-    if (!cart || cart.length === 0 || !total) {
-        return res.status(400).json({ message: 'Datos de la venta incompletos.' });
-    }
-
-    const client = await db.connect();
-    try {
-        await client.query('BEGIN');
-
-        const saleSql = 'INSERT INTO sales (total_amount) VALUES ($1) RETURNING id';
-        const saleResult = await client.query(saleSql, [total]);
-        const saleId = saleResult.rows[0].id;
-
-        for (const item of cart) {
-            const itemSql = 'INSERT INTO sale_items (sale_id, product_id, quantity, price_at_sale) VALUES ($1, $2, $3, $4)';
-            await client.query(itemSql, [saleId, item.id, item.quantity, item.price]);
-            
-            const stockSql = 'UPDATE products SET stock = stock - $1 WHERE id = $2 AND stock >= $1';
-            const stockResult = await client.query(stockSql, [item.quantity, item.id]);
-
-            if (stockResult.rowCount === 0) {
-                throw new Error('Stock insuficiente para uno de los productos.');
-            }
-        }
-
-        await client.query('COMMIT');
-        res.status(201).json({ message: 'Venta registrada exitosamente', saleId: saleId });
-
-    } catch (error) {
-        await client.query('ROLLBACK');
-        res.status(500).json({ message: error.message || 'Error interno del servidor' });
-    } finally {
-        client.release();
-    }
-});
+app.use('/api/sales', authMiddleware, salesRoutes);
 
 
 app.listen(PORT, () => {
