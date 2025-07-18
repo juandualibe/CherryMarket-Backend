@@ -8,11 +8,11 @@ const dashboardRoutes = require('./dashboard');
 const salesRoutes = require('./sales');
 const reportRoutes = require('./reports');
 const categoriesRoutes = require('./categories');
-const adminRoutes = require('./admin');
+// El import de adminRoutes fue eliminado
 
 // Middlewares
 const authMiddleware = require('./authMiddleware');
-const roleMiddleware = require('./roleMiddleware'); // Middleware para verificar el rol 'admin'
+const roleMiddleware = require('./roleMiddleware');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -41,11 +41,18 @@ app.get('/', (req, res) => res.send('¡El servidor Cherry Market está funcionan
 app.use('/api/auth', authRoutes);
 
 
-// --- Rutas Protegidas (Para cualquier usuario logueado) ---
+// --- Rutas Protegidas ---
 app.use('/api/dashboard', authMiddleware, dashboardRoutes);
 app.use('/api/sales', authMiddleware, salesRoutes);
 
-// GET de productos es accesible para todos los usuarios logueados (admins y cajeros)
+// --- Rutas SOLO PARA ADMINS ---
+app.use('/api/reports', authMiddleware, roleMiddleware, reportRoutes);
+app.use('/api/categories', authMiddleware, roleMiddleware, categoriesRoutes);
+// La línea de app.use para adminRoutes fue eliminada
+
+
+// Endpoints de Productos
+// Ver productos es para todos los logueados
 app.get('/api/products', authMiddleware, async (req, res) => {
     try {
         const sql = `
@@ -62,14 +69,7 @@ app.get('/api/products', authMiddleware, async (req, res) => {
     }
 });
 
-
-// --- Rutas Protegidas (SOLO PARA ADMINS) ---
-// El orden es: verificar que está logueado (authMiddleware), LUEGO verificar que es admin (roleMiddleware)
-app.use('/api/reports', authMiddleware, roleMiddleware, reportRoutes);
-app.use('/api/categories', authMiddleware, roleMiddleware, categoriesRoutes);
-app.use('/api/admin', authMiddleware, roleMiddleware, adminRoutes);
-
-// Crear, actualizar y eliminar productos solo puede hacerlo un admin
+// Crear, actualizar y eliminar es solo para admins
 app.post('/api/products', authMiddleware, roleMiddleware, async (req, res) => {
     const { name, price, stock, barcode, category_id } = req.body;
     if (!name || !price) {
