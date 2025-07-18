@@ -7,7 +7,7 @@ const PORT = 5000;
 
 const whitelist = [
     'http://localhost:3000',
-    'https://cherry-market-frontend-xxxx.vercel.app' // ¡Recuerda poner tu URL de Vercel aquí!
+    'https://cherry-market-frontend.vercel.app' // ¡Recuerda poner tu URL de Vercel aquí!
 ];
 const corsOptions = {
     origin: function (origin, callback) {
