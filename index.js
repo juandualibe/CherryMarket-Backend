@@ -8,9 +8,11 @@ const dashboardRoutes = require('./dashboard');
 const salesRoutes = require('./sales');
 const reportRoutes = require('./reports');
 const categoriesRoutes = require('./categories');
+const adminRoutes = require('./admin');
 
-// Middleware de autenticación
+// Middlewares
 const authMiddleware = require('./authMiddleware');
+const roleMiddleware = require('./roleMiddleware'); // Middleware para verificar el rol 'admin'
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -39,16 +41,11 @@ app.get('/', (req, res) => res.send('¡El servidor Cherry Market está funcionan
 app.use('/api/auth', authRoutes);
 
 
-// --- Rutas Protegidas ---
+// --- Rutas Protegidas (Para cualquier usuario logueado) ---
 app.use('/api/dashboard', authMiddleware, dashboardRoutes);
 app.use('/api/sales', authMiddleware, salesRoutes);
-app.use('/api/reports', authMiddleware, reportRoutes);
-app.use('/api/categories', authMiddleware, categoriesRoutes);
 
-
-// === Endpoints de Productos (MODIFICADOS) ===
-
-// GET - Ahora incluye el nombre de la categoría
+// GET de productos es accesible para todos los usuarios logueados (admins y cajeros)
 app.get('/api/products', authMiddleware, async (req, res) => {
     try {
         const sql = `
@@ -65,8 +62,15 @@ app.get('/api/products', authMiddleware, async (req, res) => {
     }
 });
 
-// POST - Ahora acepta un category_id
-app.post('/api/products', authMiddleware, async (req, res) => {
+
+// --- Rutas Protegidas (SOLO PARA ADMINS) ---
+// El orden es: verificar que está logueado (authMiddleware), LUEGO verificar que es admin (roleMiddleware)
+app.use('/api/reports', authMiddleware, roleMiddleware, reportRoutes);
+app.use('/api/categories', authMiddleware, roleMiddleware, categoriesRoutes);
+app.use('/api/admin', authMiddleware, roleMiddleware, adminRoutes);
+
+// Crear, actualizar y eliminar productos solo puede hacerlo un admin
+app.post('/api/products', authMiddleware, roleMiddleware, async (req, res) => {
     const { name, price, stock, barcode, category_id } = req.body;
     if (!name || !price) {
         return res.status(400).json({ message: 'El nombre y el precio son obligatorios.' });
@@ -84,8 +88,7 @@ app.post('/api/products', authMiddleware, async (req, res) => {
     }
 });
 
-// PUT - Ahora actualiza el category_id
-app.put('/api/products/:id', authMiddleware, async (req, res) => {
+app.put('/api/products/:id', authMiddleware, roleMiddleware, async (req, res) => {
     const { id } = req.params;
     const { name, price, stock, barcode, category_id } = req.body;
     if (!name || !price) {
@@ -104,8 +107,7 @@ app.put('/api/products/:id', authMiddleware, async (req, res) => {
     }
 });
 
-// DELETE - (No necesita cambios)
-app.delete('/api/products/:id', authMiddleware, async (req, res) => {
+app.delete('/api/products/:id', authMiddleware, roleMiddleware, async (req, res) => {
     const { id } = req.params;
     try {
         const sql = 'DELETE FROM products WHERE id = $1';
