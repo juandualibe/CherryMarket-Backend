@@ -1,15 +1,18 @@
 const express = require('express');
 const cors = require('cors');
-const db = require('./db'); 
+const db = require('./db');
 
-// Nuevos imports
+// Imports de rutas
 const authRoutes = require('./auth');
 const dashboardRoutes = require('./dashboard');
-const authMiddleware = require('./authMiddleware');
 const salesRoutes = require('./sales');
+const reportRoutes = require('./reports'); // El nuevo import
+
+// Middleware de autenticación
+const authMiddleware = require('./authMiddleware');
 
 const app = express();
-const PORT = 5000;
+const PORT = process.env.PORT || 5000;
 
 const whitelist = [
     'http://localhost:3000',
@@ -28,26 +31,30 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.use(express.json());
 
-// --- Rutas Públicas (no requieren token) ---
+// --- Rutas Públicas ---
 app.get('/', (req, res) => {
   res.send('¡El servidor Cherry Market está funcionando!');
 });
 app.use('/api/auth', authRoutes);
 
-// --- Rutas Protegidas (requieren token) ---
-app.use('/api/dashboard', authMiddleware, dashboardRoutes);
 
-// Obtener todos los productos
+// --- Rutas Protegidas ---
+app.use('/api/dashboard', authMiddleware, dashboardRoutes);
+app.use('/api/sales', authMiddleware, salesRoutes);
+app.use('/api/reports', authMiddleware, reportRoutes); // La nueva ruta de reportes
+
+
+// Endpoints de Productos (también protegidos)
 app.get('/api/products', authMiddleware, async (req, res) => {
     try {
         const { rows } = await db.query('SELECT * FROM products ORDER BY name ASC');
         res.json(rows);
     } catch (error) {
+        console.error('Error al obtener productos:', error);
         res.status(500).json({ message: 'Error interno del servidor' });
     }
 });
 
-// Crear un nuevo producto
 app.post('/api/products', authMiddleware, async (req, res) => {
     const { name, price, stock, barcode } = req.body;
     if (!name || !price) {
@@ -56,16 +63,16 @@ app.post('/api/products', authMiddleware, async (req, res) => {
     try {
         const sql = 'INSERT INTO products (name, price, stock, barcode) VALUES ($1, $2, $3, $4) RETURNING id';
         const { rows } = await db.query(sql, [name, price, stock || 0, barcode || null]);
-        res.status(201).json({ 
+        res.status(201).json({
             message: 'Producto creado exitosamente',
-            productId: rows[0].id 
+            productId: rows[0].id
         });
     } catch (error) {
+        console.error('Error al crear el producto:', error);
         res.status(500).json({ message: 'Error interno del servidor' });
     }
 });
 
-// Actualizar un producto existente
 app.put('/api/products/:id', authMiddleware, async (req, res) => {
     const { id } = req.params;
     const { name, price, stock, barcode } = req.body;
@@ -80,11 +87,11 @@ app.put('/api/products/:id', authMiddleware, async (req, res) => {
         }
         res.json({ message: 'Producto actualizado exitosamente.' });
     } catch (error) {
+        console.error('Error al actualizar el producto:', error);
         res.status(500).json({ message: 'Error interno del servidor' });
     }
 });
 
-// Eliminar un producto
 app.delete('/api/products/:id', authMiddleware, async (req, res) => {
     const { id } = req.params;
     try {
@@ -95,12 +102,10 @@ app.delete('/api/products/:id', authMiddleware, async (req, res) => {
         }
         res.json({ message: 'Producto eliminado exitosamente.' });
     } catch (error) {
+        console.error('Error al eliminar el producto:', error);
         res.status(500).json({ message: 'Error interno del servidor' });
     }
 });
-
-// Registrar una nueva venta
-app.use('/api/sales', authMiddleware, salesRoutes);
 
 
 app.listen(PORT, () => {
