@@ -8,7 +8,6 @@ const dashboardRoutes = require('./dashboard');
 const salesRoutes = require('./sales');
 const reportRoutes = require('./reports');
 const categoriesRoutes = require('./categories');
-// El import de adminRoutes fue eliminado
 
 // Middlewares
 const authMiddleware = require('./authMiddleware');
@@ -41,18 +40,11 @@ app.get('/', (req, res) => res.send('¡El servidor Cherry Market está funcionan
 app.use('/api/auth', authRoutes);
 
 
-// --- Rutas Protegidas ---
+// --- Rutas Protegidas (Para cualquier usuario logueado, INCLUIDO CAJERO) ---
 app.use('/api/dashboard', authMiddleware, dashboardRoutes);
 app.use('/api/sales', authMiddleware, salesRoutes);
 
-// --- Rutas SOLO PARA ADMINS ---
-app.use('/api/reports', authMiddleware, roleMiddleware, reportRoutes);
-app.use('/api/categories', authMiddleware, roleMiddleware, categoriesRoutes);
-// La línea de app.use para adminRoutes fue eliminada
-
-
-// Endpoints de Productos
-// Ver productos es para todos los logueados
+// Ver productos y categorías es para todos los logueados
 app.get('/api/products', authMiddleware, async (req, res) => {
     try {
         const sql = `
@@ -69,7 +61,23 @@ app.get('/api/products', authMiddleware, async (req, res) => {
     }
 });
 
-// Crear, actualizar y eliminar es solo para admins
+// AÑADIMOS ESTA RUTA PARA QUE EL CAJERO PUEDA VER LAS CATEGORÍAS EN EL POS
+app.get('/api/categories', authMiddleware, async (req, res) => {
+    try {
+        const { rows } = await db.query('SELECT * FROM categories ORDER BY name ASC');
+        res.json(rows);
+    } catch (error) {
+        res.status(500).json({ message: 'Error interno del servidor' });
+    }
+});
+
+
+// --- Rutas Protegidas (SOLO PARA ADMINS) ---
+app.use('/api/reports', authMiddleware, roleMiddleware, reportRoutes);
+// La GESTIÓN de categorías (crear, editar, borrar) es solo para admins
+app.use('/api/categories', authMiddleware, roleMiddleware, categoriesRoutes);
+
+// Crear, actualizar y eliminar productos solo puede hacerlo un admin
 app.post('/api/products', authMiddleware, roleMiddleware, async (req, res) => {
     const { name, price, stock, barcode, category_id } = req.body;
     if (!name || !price) {
