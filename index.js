@@ -1,14 +1,18 @@
 const express = require('express');
 const cors = require('cors');
-const db = require('./db');
+const db = require('./db'); 
+
+// Nuevos imports
 const authRoutes = require('./auth');
+const dashboardRoutes = require('./dashboard');
+const authMiddleware = require('./authMiddleware');
 
 const app = express();
 const PORT = 5000;
 
 const whitelist = [
     'http://localhost:3000',
-    'https://cherry-market-frontend.vercel.app' // ¡Recuerda poner tu URL de Vercel aquí!
+    'https://cherry-market-frontend.vercel.app' // Asegúrate de que esta sea tu URL de Vercel
 ];
 const corsOptions = {
     origin: function (origin, callback) {
@@ -22,16 +26,19 @@ const corsOptions = {
 };
 app.use(cors(corsOptions));
 app.use(express.json());
-app.use('/api/auth', authRoutes);
 
+// --- Rutas Públicas (no requieren token) ---
 app.get('/', (req, res) => {
   res.send('¡El servidor Cherry Market está funcionando!');
 });
+app.use('/api/auth', authRoutes);
+
+// --- Rutas Protegidas (requieren token) ---
+app.use('/api/dashboard', authMiddleware, dashboardRoutes);
 
 // Obtener todos los productos
-app.get('/api/products', async (req, res) => {
+app.get('/api/products', authMiddleware, async (req, res) => {
     try {
-        // CAMBIO AQUÍ
         const { rows } = await db.query('SELECT * FROM products ORDER BY name ASC');
         res.json(rows);
     } catch (error) {
@@ -40,14 +47,13 @@ app.get('/api/products', async (req, res) => {
 });
 
 // Crear un nuevo producto
-app.post('/api/products', async (req, res) => {
+app.post('/api/products', authMiddleware, async (req, res) => {
     const { name, price, stock, barcode } = req.body;
     if (!name || !price) {
         return res.status(400).json({ message: 'El nombre y el precio son obligatorios.' });
     }
     try {
         const sql = 'INSERT INTO products (name, price, stock, barcode) VALUES ($1, $2, $3, $4) RETURNING id';
-        // CAMBIO AQUÍ (y en la sintaxis de la consulta)
         const { rows } = await db.query(sql, [name, price, stock || 0, barcode || null]);
         res.status(201).json({ 
             message: 'Producto creado exitosamente',
@@ -59,7 +65,7 @@ app.post('/api/products', async (req, res) => {
 });
 
 // Actualizar un producto existente
-app.put('/api/products/:id', async (req, res) => {
+app.put('/api/products/:id', authMiddleware, async (req, res) => {
     const { id } = req.params;
     const { name, price, stock, barcode } = req.body;
     if (!name || !price) {
@@ -67,7 +73,6 @@ app.put('/api/products/:id', async (req, res) => {
     }
     try {
         const sql = 'UPDATE products SET name = $1, price = $2, stock = $3, barcode = $4 WHERE id = $5';
-        // CAMBIO AQUÍ
         const { rowCount } = await db.query(sql, [name, price, stock, barcode, id]);
         if (rowCount === 0) {
             return res.status(404).json({ message: 'Producto no encontrado.' });
@@ -79,11 +84,10 @@ app.put('/api/products/:id', async (req, res) => {
 });
 
 // Eliminar un producto
-app.delete('/api/products/:id', async (req, res) => {
+app.delete('/api/products/:id', authMiddleware, async (req, res) => {
     const { id } = req.params;
     try {
         const sql = 'DELETE FROM products WHERE id = $1';
-        // CAMBIO AQUÍ
         const { rowCount } = await db.query(sql, [id]);
         if (rowCount === 0) {
             return res.status(404).json({ message: 'Producto no encontrado.' });
@@ -95,7 +99,7 @@ app.delete('/api/products/:id', async (req, res) => {
 });
 
 // Registrar una nueva venta
-app.post('/api/sales', async (req, res) => {
+app.post('/api/sales', authMiddleware, async (req, res) => {
     const { cart, total } = req.body;
     if (!cart || cart.length === 0 || !total) {
         return res.status(400).json({ message: 'Datos de la venta incompletos.' });
