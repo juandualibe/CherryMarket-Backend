@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const db = require('./db');
+const authRoutes = require('./auth');
 
 const app = express();
 const PORT = 5000;
@@ -21,6 +22,7 @@ const corsOptions = {
 };
 app.use(cors(corsOptions));
 app.use(express.json());
+app.use('/api/auth', authRoutes);
 
 app.get('/', (req, res) => {
   res.send('¡El servidor Cherry Market está funcionando!');
