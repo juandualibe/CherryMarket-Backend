@@ -4,8 +4,6 @@ const router = express.Router();
 
 router.get('/stats', async (req, res) => {
     try {
-        // --- CONSULTA CORREGIDA Y FINAL PARA VENTAS DEL DÍA ---
-        // Usamos la misma lógica de zona horaria que el gráfico para una consistencia perfecta.
         const salesQuery = `
             SELECT COALESCE(SUM(total_amount), 0) AS total_sales_today
             FROM sales
@@ -14,8 +12,8 @@ router.get('/stats', async (req, res) => {
         const salesResult = await db.query(salesQuery);
         const totalSalesToday = salesResult.rows[0].total_sales_today;
 
-        // Contar productos con bajo stock (se mantiene igual)
-        const lowStockQuery = 'SELECT COUNT(*) AS low_stock_count FROM products WHERE stock < 10 AND is_active = TRUE';
+        // --- CONSULTA CORREGIDA: Eliminamos la condición "is_active" ---
+        const lowStockQuery = 'SELECT COUNT(*) AS low_stock_count FROM products WHERE stock < 10';
         const lowStockResult = await db.query(lowStockQuery);
         const lowStockCount = lowStockResult.rows[0].low_stock_count;
 
