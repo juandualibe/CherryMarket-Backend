@@ -2,15 +2,15 @@ const express = require('express');
 const db = require('./db');
 const router = express.Router();
 
-// Endpoint para obtener todas las estadísticas del dashboard
 router.get('/stats', async (req, res) => {
     try {
-        // --- CONSULTA CORREGIDA PARA VENTAS DEL DÍA ---
-        // Ahora usa la misma lógica de zona horaria que los reportes.
+        // --- CONSULTA CORREGIDA Y FINAL PARA VENTAS DEL DÍA ---
+        // Esta consulta convierte la fecha de la venta a la zona horaria de Argentina
+        // y la compara con la fecha actual en la misma zona horaria.
         const salesQuery = `
             SELECT COALESCE(SUM(total_amount), 0) AS total_sales_today
             FROM sales
-            WHERE DATE(sale_date AT TIME ZONE 'America/Argentina/Buenos_Aires') = CURRENT_DATE AT TIME ZONE 'America/Argentina/Buenos_Aires';
+            WHERE (sale_date AT TIME ZONE 'America/Argentina/Buenos_Aires')::date = (CURRENT_TIMESTAMP AT TIME ZONE 'America/Argentina/Buenos_Aires')::date;
         `;
         const salesResult = await db.query(salesQuery);
         const totalSalesToday = salesResult.rows[0].total_sales_today;
@@ -20,7 +20,6 @@ router.get('/stats', async (req, res) => {
         const lowStockResult = await db.query(lowStockQuery);
         const lowStockCount = lowStockResult.rows[0].low_stock_count;
 
-        // Devolver todos los datos en un solo objeto
         res.json({
             totalSalesToday: parseFloat(totalSalesToday),
             lowStockCount: parseInt(lowStockCount, 10),
