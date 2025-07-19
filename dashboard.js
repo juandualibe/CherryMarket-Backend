@@ -4,11 +4,11 @@ const router = express.Router();
 
 router.get('/stats', async (req, res) => {
     try {
+        // CONSULTA SIMPLIFICADA Y CORRECTA
         const salesQuery = `
             SELECT COALESCE(SUM(total_amount), 0) AS total_sales_today
             FROM sales
-            WHERE (sale_date::timestamp AT TIME ZONE 'UTC' AT TIME ZONE 'America/Argentina/Buenos_Aires')::date = 
-                  (CURRENT_TIMESTAMP AT TIME ZONE 'America/Argentina/Buenos_Aires')::date;
+            WHERE (sale_date AT TIME ZONE 'America/Argentina/Buenos_Aires')::date = (CURRENT_TIMESTAMP AT TIME ZONE 'America/Argentina/Buenos_Aires')::date;
         `;
         const salesResult = await db.query(salesQuery);
         const totalSalesToday = salesResult.rows[0].total_sales_today;

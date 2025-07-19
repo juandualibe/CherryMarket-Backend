@@ -10,15 +10,14 @@ router.get('/sales-summary', async (req, res) => {
     }
 
     try {
+        // CONSULTA SIMPLIFICADA Y CORRECTA
         const query = `
             SELECT
-                DATE(sale_date::timestamp AT TIME ZONE 'UTC' AT TIME ZONE 'America/Argentina/Buenos_Aires') as date,
+                (sale_date AT TIME ZONE 'America/Argentina/Buenos_Aires')::date as date,
                 SUM(total_amount) as total
             FROM sales
             WHERE
-                (sale_date::timestamp AT TIME ZONE 'UTC' AT TIME ZONE 'America/Argentina/Buenos_Aires')::date >= $1::date
-            AND
-                (sale_date::timestamp AT TIME ZONE 'UTC' AT TIME ZONE 'America/Argentina/Buenos_Aires')::date <= $2::date
+                (sale_date AT TIME ZONE 'America/Argentina/Buenos_Aires')::date BETWEEN $1::date AND $2::date
             GROUP BY date
             ORDER BY date ASC;
         `;
