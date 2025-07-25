@@ -1,11 +1,11 @@
-const db = require('../db'); // Corregido
+const db = require('../db');
 
 const findAll = async () => {
+    // CORRECCIÓN: Se eliminó la condición "WHERE p.is_active = TRUE"
     const sql = `
         SELECT p.*, c.name AS category_name
         FROM products p
         LEFT JOIN categories c ON p.category_id = c.id
-        WHERE p.is_active = TRUE
         ORDER BY p.name ASC;
     `;
     const { rows } = await db.query(sql);
@@ -24,8 +24,9 @@ const update = async (id, { name, price, stock, barcode, category_id }) => {
     return { updatedProduct: rows[0], rowCount };
 };
 
-const softDelete = async (id) => {
-    const sql = 'UPDATE products SET is_active = FALSE WHERE id = $1';
+// CORRECCIÓN: Renombramos la función y cambiamos la lógica a un borrado real (DELETE)
+const hardDelete = async (id) => {
+    const sql = 'DELETE FROM products WHERE id = $1';
     const { rowCount } = await db.query(sql, [id]);
     return { rowCount };
 };
@@ -34,5 +35,6 @@ module.exports = {
     findAll,
     create,
     update,
-    softDelete,
+    // CORRECCIÓN: Exportamos la nueva función
+    hardDelete, 
 };
