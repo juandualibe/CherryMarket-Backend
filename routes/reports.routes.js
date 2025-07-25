@@ -1,9 +1,8 @@
 const express = require('express');
-const db = require('../db');
+const db = require('../db'); // RUTA CORREGIDA
 const router = express.Router();
 
 // GET /api/reports/sales-summary
-// Devuelve un resumen de ventas agrupado por día en un rango de fechas
 router.get('/sales-summary', async (req, res) => {
     const { startDate, endDate } = req.query;
 
@@ -14,7 +13,7 @@ router.get('/sales-summary', async (req, res) => {
     try {
         const query = `
             SELECT
-                (sale_date AT TIME ZONE 'America/Argentina/Buenos_ Aires')::date as date,
+                (sale_date AT TIME ZONE 'America/Argentina/Buenos_Aires')::date as date,
                 SUM(total_amount) as total
             FROM sales
             WHERE
@@ -32,12 +31,9 @@ router.get('/sales-summary', async (req, res) => {
     }
 });
 
-// --- NUEVA RUTA ---
 // GET /api/reports/top-selling-products
-// Devuelve los productos más vendidos
 router.get('/top-selling-products', async (req, res) => {
     try {
-        // Por defecto, muestra el TOP 5. Se puede cambiar con ?limit=10
         const limit = req.query.limit || 5;
 
         const query = `
