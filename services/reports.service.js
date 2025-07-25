@@ -20,14 +20,17 @@ const getDashboardStats = async () => {
 };
 
 const getSalesSummary = async (startDate, endDate) => {
+    // --- CONSULTA FINAL Y DEFINITIVA ---
+    // Usamos TO_CHAR para que la base de datos formatee la fecha como un simple texto.
     const query = `
         SELECT
-            (sale_date AT TIME ZONE 'America/Argentina/Buenos_Aires')::date as date,
+            TO_CHAR(sale_date AT TIME ZONE 'America/Argentina/Buenos_Aires', 'DD/MM') as date,
             SUM(total_amount) as total
         FROM sales
-        WHERE (sale_date AT TIME ZONE 'America/Argentina/Buenos_Aires')::date BETWEEN $1::date AND $2::date
+        WHERE
+            (sale_date AT TIME ZONE 'America/Argentina/Buenos_Aires')::date BETWEEN $1::date AND $2::date
         GROUP BY date
-        ORDER BY date ASC;
+        ORDER BY TO_DATE(date, 'DD/MM'); -- Ordenamos por la fecha real
     `;
     const { rows } = await db.query(query, [startDate, endDate]);
     return rows;
