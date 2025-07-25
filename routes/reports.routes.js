@@ -1,5 +1,5 @@
 const express = require('express');
-const db = require('./db');
+const db = require('../db'); // Corregido
 const router = express.Router();
 
 router.get('/sales-summary', async (req, res) => {

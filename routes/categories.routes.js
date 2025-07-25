@@ -1,5 +1,5 @@
 const express = require('express');
-const db = require('./db');
+const db = require('../db'); // Corregido
 const router = express.Router();
 
 // GET /api/categories - Obtener todas las categorías
