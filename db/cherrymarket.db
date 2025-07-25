@@ -1,0 +1,53 @@
+-- Tabla para las categorías de productos
+CREATE TABLE categories (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(255) UNIQUE NOT NULL
+);
+
+-- Tabla para los productos
+CREATE TABLE products (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    price DECIMAL(10, 2) NOT NULL,
+    stock INT DEFAULT 0,
+    barcode VARCHAR(255),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    category_id INT,
+    CONSTRAINT fk_category
+        FOREIGN KEY (category_id)
+        REFERENCES categories(id)
+        ON DELETE SET NULL
+);
+
+-- Tabla para los usuarios y sus roles
+CREATE TABLE users (
+    id SERIAL PRIMARY KEY,
+    username VARCHAR(255) UNIQUE NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    role VARCHAR(50) NOT NULL DEFAULT 'cashier'
+);
+
+-- Tabla para la información general de cada venta
+CREATE TABLE sales (
+    id SERIAL PRIMARY KEY,
+    sale_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    total_amount DECIMAL(10, 2) NOT NULL
+);
+
+-- Tabla para los productos específicos de cada venta
+CREATE TABLE sale_items (
+    id SERIAL PRIMARY KEY,
+    sale_id INT NOT NULL,
+    product_id INT NOT NULL,
+    quantity INT NOT NULL,
+    price_at_sale DECIMAL(10, 2) NOT NULL,
+    CONSTRAINT fk_sales
+        FOREIGN KEY (sale_id)
+        REFERENCES sales(id)
+        ON DELETE CASCADE, -- Si se borra una venta, se borran sus items
+    CONSTRAINT fk_product
+        FOREIGN KEY (product_id)
+        REFERENCES products(id)
+        ON DELETE CASCADE -- Si se borra un producto, el item de venta también se borra
+);
