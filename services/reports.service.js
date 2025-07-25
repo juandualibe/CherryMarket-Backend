@@ -20,8 +20,6 @@ const getDashboardStats = async () => {
 };
 
 const getSalesSummary = async (startDate, endDate) => {
-    // --- CONSULTA FINAL Y DEFINITIVA ---
-    // Usamos TO_CHAR para que la base de datos formatee la fecha como un simple texto.
     const query = `
         SELECT
             TO_CHAR(sale_date AT TIME ZONE 'America/Argentina/Buenos_Aires', 'DD/MM') as date,
@@ -30,7 +28,7 @@ const getSalesSummary = async (startDate, endDate) => {
         WHERE
             (sale_date AT TIME ZONE 'America/Argentina/Buenos_Aires')::date BETWEEN $1::date AND $2::date
         GROUP BY date
-        ORDER BY TO_DATE(date, 'DD/MM'); -- Ordenamos por la fecha real
+        ORDER BY TO_DATE(date, 'DD/MM') ASC; -- CORRECCIÓN AQUÍ
     `;
     const { rows } = await db.query(query, [startDate, endDate]);
     return rows;
