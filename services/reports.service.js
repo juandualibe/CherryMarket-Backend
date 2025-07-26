@@ -1,16 +1,15 @@
 const db = require('../db');
+// CORRECCIÓN: Importamos desde la librería correcta
 const { zonedTimeToUtc, utcToZonedTime, format } = require('date-fns-tz');
 
 // La zona horaria clave para todas las operaciones
 const timeZone = 'America/Argentina/Buenos_Aires';
 
 const getDashboardStats = async () => {
-    // Obtenemos el inicio y fin del día actual en Argentina
     const nowInArgentina = utcToZonedTime(new Date(), timeZone);
-    const startOfDayArg = format(nowInArgentina, 'yyyy-MM-dd 00:00:00', { timeZone });
-    const endOfDayArg = format(nowInArgentina, 'yyyy-MM-dd 23:59:59', { timeZone });
+    const startOfDayArg = new Date(nowInArgentina.getFullYear(), nowInArgentina.getMonth(), nowInArgentina.getDate());
+    const endOfDayArg = new Date(startOfDayArg.getTime() + 24 * 60 * 60 * 1000 - 1);
 
-    // Convertimos esas horas locales a UTC para consultar la base de datos
     const startOfDayUTC = zonedTimeToUtc(startOfDayArg, timeZone);
     const endOfDayUTC = zonedTimeToUtc(endOfDayArg, timeZone);
 
@@ -33,11 +32,9 @@ const getDashboardStats = async () => {
 };
 
 const getSalesSummary = async (startDate, endDate) => {
-    // Convertimos las fechas de entrada a rangos UTC
     const startUTC = zonedTimeToUtc(startDate, timeZone);
     const endUTC = zonedTimeToUtc(`${endDate} 23:59:59`, timeZone);
 
-    // Consulta simple que trae todas las ventas en el rango UTC
     const query = `
         SELECT sale_date, total_amount
         FROM sales
@@ -46,7 +43,6 @@ const getSalesSummary = async (startDate, endDate) => {
     `;
     const { rows } = await db.query(query, [startUTC, endUTC]);
 
-    // Agrupamos y sumamos en JavaScript
     const salesByDay = {};
     rows.forEach(sale => {
         const localDate = utcToZonedTime(sale.sale_date, timeZone);
@@ -57,11 +53,14 @@ const getSalesSummary = async (startDate, endDate) => {
         salesByDay[dateKey] += parseFloat(sale.total_amount);
     });
 
-    // Convertimos el objeto al formato que espera el gráfico
     const formattedSales = Object.keys(salesByDay).map(date => ({
         date: date,
         total: salesByDay[date]
-    }));
+    })).sort((a, b) => {
+        const dateA = new Date(a.date.split('/').reverse().join('-'));
+        const dateB = new Date(b.date.split('/').reverse().join('-'));
+        return dateA - dateB;
+    });
 
     return formattedSales;
 };
