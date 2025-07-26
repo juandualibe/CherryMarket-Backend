@@ -1,104 +1,157 @@
-# 🍒 Cherry Market - API del Backend
 
-Bienvenido al backend de **Cherry Market**. Esta es una API RESTful robusta y segura, construida con Node.js y Express, que sirve como el motor para la aplicación de gestión de inventario y punto de venta.
+# 🍒 Cherry Market - Panel de Administración (Frontend)
 
-## Live Demo
-* **API Desplegada en Render:** `https://cherry-market-api.onrender.com`
+Bienvenido al frontend de **Cherry Market**, una aplicación de página única (SPA) diseñada para la gestión eficiente de un punto de venta (POS) y el control de inventario. Construida con **React** y **Material-UI**, esta interfaz ofrece una experiencia de usuario moderna, profesional, completamente responsiva y optimizada para entornos comerciales. Este proyecto se integra con una API RESTful backend para proporcionar funcionalidades robustas y seguras.
 
----
-## Arquitectura y Características
+## 🚀 Live Demo
+- **Frontend Desplegado en Vercel**: [https://cherry-market-frontend.vercel.app](https://cherry-market-frontend.vercel.app)
+- **Backend Desplegado en Render**: [https://cherry-market-api.onrender.com](https://cherry-market-api.onrender.com)
+- **Nota**: El backend utiliza un plan gratuito en Render, lo que puede causar una demora inicial de ~30 segundos en la primera solicitud del día mientras el servidor "despierta".
 
-Este backend está diseñado para ser seguro, eficiente y escalable, manejando toda la lógica de negocio y la persistencia de datos.
+## 🎯 Características Principales
+Cherry Market ofrece un flujo de usuario completo, desde la autenticación hasta la gestión avanzada de ventas e inventario, con un enfoque en usabilidad y rendimiento.
 
-### 1. **Autenticación y Seguridad**
-* **Registro de Usuarios (`/api/auth/register`):** Permite la creación de nuevas cuentas de administrador. Las contraseñas se encriptan de forma irreversible utilizando el algoritmo **bcrypt**, garantizando que nunca se almacenen en texto plano.
-* **Inicio de Sesión (`/api/auth/login`):** Autentica a los usuarios comparando la contraseña ingresada con el hash almacenado.
-* **Tokens JWT:** Tras un login exitoso, la API genera un **JSON Web Token (JWT)** firmado con un secreto. Este token actúa como una credencial digital que el frontend debe enviar en cada petición subsecuente.
-* **Rutas Protegidas:** Todas las rutas críticas (productos, ventas, reportes) están protegidas por un middleware que verifica la validez del token JWT en cada petición, denegando el acceso a usuarios no autorizados.
+### 1. Autenticación y Gestión de Sesiones
+- **Página de Registro (`/register`)**: Permite a nuevos usuarios crear cuentas con un nombre de usuario y contraseña. Las credenciales se envían de forma segura al backend para su almacenamiento encriptado.
+- **Página de Inicio de Sesión (`/login`)**: Autentica a los usuarios mediante tokens **JWT** (JSON Web Tokens), garantizando sesiones seguras. Incluye funcionalidad para mostrar/ocultar la contraseña.
+- **Sesión Persistente**: Utiliza `localStorage` para mantener la sesión activa, permitiendo a los usuarios permanecer autenticados al refrescar la página o cerrar el navegador.
+- **Rutas Protegidas**: Las rutas del panel de administración (`/dashboard`, `/pos`, `/management`, `/history`, `/categories`) están protegidas, redirigiendo a usuarios no autenticados a `/login`.
+- **Autorización por Roles**: Los usuarios con rol `admin` tienen acceso a funciones exclusivas (gestión de productos, historial de ventas, gestión de categorías), mientras que los usuarios con rol `cashier` están limitados al dashboard y al punto de venta.
 
-### 2. **Gestión de Productos (CRUD)**
-* **Funcionalidad CRUD completa** para el inventario, permitiendo crear, leer, actualizar y eliminar productos.
+### 2. Diseño y Navegación
+- **Layout Responsivo**: Implementado con **Material-UI**, el diseño se adapta a cualquier dispositivo. En escritorio, muestra un menú lateral fijo; en móviles, un menú "hamburger" optimiza el espacio.
+- **Navegación Fluida**: Utiliza **React Router DOM** para gestionar rutas dinámicas con URLs limpias (ej. `/dashboard`, `/pos`).
+- **Tema Personalizado**: Un tema global de Material-UI asegura una paleta de colores consistente y una experiencia visual profesional.
+- **Notificaciones**: **React Toastify** muestra alertas amigables para acciones como registro de ventas, errores o actualizaciones exitosas.
 
-### 3. **Sistema de Ventas Transaccional**
-* **Endpoint de Ventas (`/api/sales`):** Maneja el registro de nuevas ventas. La operación se ejecuta dentro de una **transacción de base de datos** para garantizar la integridad de los datos:
-    1. Registra la venta en la tabla `sales`.
-    2. Registra cada producto vendido en la tabla `sale_items`.
-    3. Descuenta el stock correspondiente de la tabla `products`.
-    * Si cualquiera de estos pasos falla (ej: stock insuficiente), toda la operación se revierte (`ROLLBACK`), evitando inconsistencias en los datos.
+### 3. Dashboard Interactivo (`/dashboard`)
+- **Estadísticas en Tiempo Real**: Muestra métricas clave como:
+  - Ventas totales del día.
+  - Cantidad de productos con bajo stock (<10 unidades).
+- **Gráfico de Ventas (Admin)**: Un gráfico de barras generado con **Recharts** visualiza las ventas diarias de la última semana, exclusivo para administradores.
+- **Top 5 Productos Vendidos**: Lista los productos más vendidos, con datos actualizados desde el backend.
 
-### 4. **Reportes y Analítica**
-* **Estadísticas del Dashboard (`/api/dashboard/stats`):** Proporciona un resumen rápido de métricas clave, como las ventas totales del día y el número de productos con bajo stock.
-* **Resumen de Ventas por Fecha (`/api/reports/sales-summary`):** Un endpoint flexible que acepta un rango de fechas y devuelve un resumen de las ventas diarias, ideal para alimentar gráficos y reportes.
+### 4. Punto de Venta (`/pos`)
+- **Catálogo de Productos**: Muestra todos los productos disponibles con:
+  - Búsqueda en tiempo real por nombre o categoría.
+  - Visualización en tarjetas con nombre, precio, stock y categoría.
+- **Carrito de Compras Dinámico**:
+  - Añade productos al carrito con validación de stock.
+  - Permite modificar cantidades o eliminar ítems.
+  - Soporta ítems manuales (sin ID de producto) con nombre, precio y cantidad personalizados.
+  - Calcula el total de la venta en tiempo real.
+- **Calculadora Integrada**: Una calculadora interactiva permite realizar cálculos rápidos, con soporte para operaciones básicas, porcentajes y cambio de signo, controlada por teclado o botones.
+- **Finalización de Ventas**: Registra la venta en el backend, actualiza el stock y notifica al usuario del éxito de la operación.
 
----
-## Stack Tecnológico
-* **Node.js**: Entorno de ejecución para JavaScript del lado del servidor.
-* **Express**: Framework web para construir la API de forma rápida y organizada.
-* **PostgreSQL**: Sistema de gestión de bases de datos relacional, potente y de código abierto.
-* **pg**: Driver de Node.js para la conexión con la base de datos PostgreSQL.
-* **bcryptjs**: Librería para el hasheo seguro de contraseñas.
-* **jsonwebtoken (JWT)**: Para la creación y verificación de tokens de sesión.
-* **CORS**: Middleware para habilitar el Cross-Origin Resource Sharing de forma segura.
-* **dotenv**: Para la gestión de variables de entorno en el desarrollo local.
+### 5. Gestión de Inventario (`/management`)
+- **CRUD Completo**: Permite crear, leer, actualizar y eliminar productos (exclusivo para administradores).
+- **Formulario Modal**: La creación y edición de productos se realiza en un modal intuitivo con campos para nombre, precio, stock, código de barras y categoría.
+- **Validaciones**: Garantiza que los campos obligatorios (nombre y precio) estén completos antes de enviar la solicitud al backend.
 
----
-## Cómo Empezar (Desarrollo Local)
+### 6. Gestión de Categorías (`/categories`)
+- **CRUD de Categorías**: Permite crear, editar, actualizar y eliminar categorías de productos (exclusivo para administradores).
+- **Interfaz de Lista**: Muestra todas las categorías con opciones para editar o eliminar directamente desde la lista.
+- **Notificaciones**: Informa al usuario sobre acciones exitosas o errores (ej. categoría duplicada).
 
+### 7. Historial de Ventas (`/history`)
+- **Lista de Ventas**: Muestra todas las transacciones con detalles como ID, fecha y total (exclusivo para administradores).
+- **Filtro por Rango de Fechas**: Utiliza selectores de fecha de **Material-UI** para consultar ventas en un período específico.
+- **Detalles Expandibles**: Cada venta incluye un acordeón que muestra los ítems vendidos, sus cantidades y precios.
+
+## 🛠️ Stack Tecnológico
+| Tecnología         | Descripción                                                                 |
+|--------------------|-----------------------------------------------------------------------------|
+| **React**          | Librería para construir la interfaz de usuario.                             |
+| **React Router DOM** | Gestión de rutas y navegación.                                             |
+| **Material-UI**    | Componentes de UI responsivos y personalizables.                           |
+| **Axios**          | Cliente HTTP para interactuar con la API backend.                           |
+| **Recharts**       | Creación de gráficos interactivos en el dashboard.                         |
+| **React Toastify** | Notificaciones amigables para el usuario.                                  |
+| **date-fns**       | Manejo y formateo de fechas en selectores y reportes.                      |
+| **JWT Decode**     | Decodificación de tokens JWT para gestionar roles y autenticación.         |
+
+## 🛠️ Instalación y Ejecución (Desarrollo Local)
 ### Prerrequisitos
-* Node.js (v16 o superior)
-* Una instancia local de PostgreSQL instalada y corriendo.
+- **Node.js** (v16 o superior)
+- **npm** (incluido con Node.js)
+- Acceso al backend de Cherry Market (local o desplegado)
 
-### 1. Clonar el Repositorio
-```bash
-git clone [https://github.com/juandualibe/CherryMarket-Backend.git](https://github.com/juandualibe/CherryMarket-Backend.git)
-cd CherryMarket-Backend
+### Pasos
+1. **Clonar el Repositorio**
+   ```bash
+   git clone https://github.com/juandualibe/CherryMarket-Frontend.git
+   cd CherryMarket-Frontend
+   ```
+
+2. **Instalar Dependencias**
+   ```bash
+   npm install
+   ```
+
+3. **Configurar Variables de Entorno**  
+   Crea un archivo `.env` en la raíz del proyecto con la siguiente variable:
+   ```env
+   REACT_APP_API_URL=http://localhost:5000
+   ```
+   Ajusta `REACT_APP_API_URL` según la URL del backend (local o desplegado).
+
+4. **Iniciar la Aplicación**
+   ```bash
+   npm start
+   ```
+   La aplicación se ejecutará en [http://localhost:3000](http://localhost:3000).
+
+5. **Compilar para Producción**
+   ```bash
+   npm run build
+   ```
+   Genera una versión optimizada en la carpeta `build`.
+
+### Estructura de Carpetas
+```plaintext
+├── public/                # Archivos estáticos públicos
+├── src/                   # Código fuente
+│   ├── assets/            # Recursos estáticos (ej. logo)
+│   ├── components/        # Componentes reutilizables
+│   │   ├── categories/    # Componentes para gestión de categorías
+│   │   ├── common/        # Componentes compartidos (ej. Layout)
+│   │   ├── products/      # Componentes para gestión de productos
+│   │   ├── sales/         # Componentes para el punto de venta
+│   │   ├── ui/            # Componentes de UI genéricos (ej. Calculator)
+│   ├── pages/             # Páginas principales (ej. Dashboard, PosView)
+│   ├── services/          # Servicios de API (ej. api.js)
+│   ├── theme/             # Configuración del tema de Material-UI
+│   ├── App.js             # Componente raíz con enrutamiento
+│   ├── index.js           # Punto de entrada de la aplicación
+├── .env                   # Variables de entorno
+├── package.json           # Dependencias y scripts
+├── README.md              # Documentación del proyecto
 ```
 
-### 2. Instalar Dependencias
-```bash
-npm install
-```
+### Notas y Mejoras Futuras
+- **Optimización de Performance**: Implementar lazy loading para componentes pesados.  
+- **Filtros Avanzados**: Añadir filtros adicionales en el historial de ventas (ej. por producto o categoría).  
+- **Testing**: Incorporar pruebas unitarias con Jest y React Testing Library.  
+- **Internacionalización**: Soporte para múltiples idiomas usando i18n.
 
-### 3. Configurar la Base de Datos Local
-Asegúrate de tener una base de datos creada en tu instancia local de PostgreSQL. Por ejemplo, `cherry_market_db`.
+## 🤝 Contribuir
+1. Haz un fork del repositorio.  
+2. Crea una rama para tu feature  
+   ```bash
+   git checkout -b feature/nueva-funcionalidad
+   ```
+3. Realiza tus cambios y haz commit  
+   ```bash
+   git commit -m "Añade nueva funcionalidad"
+   ```
+4. Sube los cambios  
+   ```bash
+   git push origin feature/nueva-funcionalidad
+   ```
+5. Abre un Pull Request en GitHub.
 
-### 4. Configurar Variables de Entorno
-Crea un archivo llamado `.env` en la raíz del proyecto y añade las siguientes variables:
+## 📄 Licencia
+Este proyecto está bajo la licencia MIT. Consulta el archivo LICENSE para más detalles.
 
-```
-# URL de conexión para tu base de datos PostgreSQL local
-DATABASE_URL="postgresql://TU_USUARIO_POSTGRES:TU_CONTRASEÑA@localhost:5432/cherry_market_db"
-
-# Un secreto largo y aleatorio para firmar los tokens JWT
-JWT_SECRET="TU_SECRETO_JWT_AQUI"
-```
-
-### 5. Iniciar el Servidor
-```bash
-npm start
-```
-El servidor se ejecutará en `http://localhost:5000`.
-
----
-## Documentación de Endpoints de la API
-
-### Autenticación
-- `POST /api/auth/register` - **(Pública)** - Registra un nuevo usuario.
-- `POST /api/auth/login` - **(Pública)** - Inicia sesión y devuelve un token JWT.
-
-### Productos
-- `GET /api/products` - **(Protegida)** - Obtiene la lista de todos los productos.
-- `POST /api/products` - **(Protegida)** - Crea un nuevo producto.
-- `PUT /api/products/:id` - **(Protegida)** - Actualiza un producto existente.
-- `DELETE /api/products/:id` - **(Protegida)** - Elimina un producto.
-
-### Ventas
-- `GET /api/sales` - **(Protegida)** - Obtiene el historial completo de ventas con sus detalles.
-- `POST /api/sales` - **(Protegida)** - Registra una nueva venta.
-
-### Dashboard
-- `GET /api/dashboard/stats` - **(Protegida)** - Obtiene las estadísticas para el dashboard (ventas del día, bajo stock).
-
-### Reportes
-- `GET /api/reports/sales-summary` - **(Protegida)** - Obtiene un resumen de ventas agrupado por día dentro de un rango de fechas.
-    - Query Params: `startDate` (YYYY-MM-DD), `endDate` (YYYY-MM-DD).
+## 📬 Contacto
+Desarrollado por Juan Dualibe. Para consultas, contáctame en [juandualibe@gmail.com](mailto:juandualibe@gmail.com).
